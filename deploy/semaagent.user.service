@@ -1,0 +1,40 @@
+# Житель машины на рабочей машине человека: служба от самого человека
+# (`systemctl --user`). Так и надо: житель читает репозитории и отвечает
+# хукам Claude Code и Codex, а они запускаются от человека и ищут сокет в
+# его домашнем каталоге (~/.sema-agent/agent.sock). Служба от чужого
+# пользователя ни репозиториев, ни этого сокета не увидит.
+#
+# Это ответ на открытый вопрос design.md для случая «личная машина». Для
+# машины, где человек не один, — semaagent.service.
+#
+# Положить в ~/.config/systemd/user/semaagent.service, подставив
+# @АДРЕС_СЁМЫ@ (например sema.local:8766). Порядок — deploy/README.md.
+
+[Unit]
+Description=Сёма-агент — житель машины (от имени человека)
+After=network-online.target
+
+[Service]
+Type=simple
+# каталог состояния тот же, что на маке: ~/.sema-agent, права 0600 на
+# файлах ставит сам агент
+ExecStart=%h/.local/bin/semaagent -link @АДРЕС_СЁМЫ@ -home %h/.sema-agent
+
+# PATH задан нарочно: житель машины ищет на диске языковые серверы, ctags и
+# ripgrep, а служба получает урезанный PATH. Без ~/go/bin в нём не находится
+# gopls, поставленный `go install`, и Go отвечает ярусом ctags вместо lsp —
+# молча, просто хуже (наступали на маке 27 сентября 2026)
+Environment=PATH=%h/go/bin:%h/.local/bin:%h/.cargo/bin:/usr/local/bin:/usr/bin:/bin
+
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=20s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# не multi-user: служба человека живёт, пока есть его сеанс. Чтобы она
+# поднималась и без входа в систему — `loginctl enable-linger <человек>`,
+# об этом сказано в deploy/README.md
+WantedBy=default.target

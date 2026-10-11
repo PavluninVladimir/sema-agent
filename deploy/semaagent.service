@@ -1,0 +1,55 @@
+# Житель машины как системная служба: своя учётная запись, свой каталог
+# состояния. Такой вид нужен там, где машина не чья-то личная — VPS,
+# сервер сборки: удостоверение агента не должно лежать в домашнем каталоге
+# человека, которого на этой машине несколько.
+#
+# Человеку на его рабочей машине нужен другой вид — semaagent.user.service:
+# житель читает репозитории человека, и служба от чужого пользователя их
+# не увидит. Порядок установки обоих — deploy/README.md.
+#
+# Подставить перед установкой: @АДРЕС_СЁМЫ@ (например sema.local:8766).
+
+[Unit]
+Description=Сёма-агент — житель машины
+Documentation=https://github.com/PavluninVladimir/sema-agent
+# провод агент держит сам, поэтому сети достаточно «поднята»: Сёма может
+# быть недоступна в момент старта — агент перезвонит сам
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=semaagent
+Group=semaagent
+
+# каталог состояния делает systemd: /var/lib/semaagent, права 0700 —
+# удостоверение агента и сокет местной двери сосед по машине не читает
+StateDirectory=semaagent
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/semaagent -link @АДРЕС_СЁМЫ@ -home %S/semaagent
+
+# упал — поднимаем; растущую паузу переподключения агент держит сам,
+# поэтому службе хватает секунд пяти
+Restart=always
+RestartSec=5s
+# остановка: агент закрывает провод и отпускает сокет сам
+KillSignal=SIGTERM
+TimeoutStopSec=20s
+
+# журнал уходит в journalctl -u semaagent: своего файла агент не ведёт
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+# ProtectHome здесь можно: этот вид службы работает от своего пользователя
+# и репозиториев человека не читает. У semaagent.user.service всё наоборот —
+# там читать их и есть работа
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

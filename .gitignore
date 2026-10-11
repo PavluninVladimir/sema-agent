@@ -1,0 +1,4 @@
+/semaagent
+/dist/
+*.log
+.claude/

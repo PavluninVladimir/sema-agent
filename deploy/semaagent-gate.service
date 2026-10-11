@@ -1,0 +1,67 @@
+# Шлюз как системная служба: лицо Сёмы в интернете.
+#
+# Роль не совмещается с жителем машины (см. cmd/semaagent/role.go): житель
+# читает репозитории человека, шлюз стоит лицом к интернету, и в одном
+# теле это разные полномочия. Поэтому у шлюза **своя** служба, своя
+# учётная запись и свой каталог состояния, а не флаг у жителя.
+#
+# Соединение открывает Сёма, а не шлюз: у шлюза адрес постоянный,
+# а прячется Сёма.
+# Значит здесь ничего никуда не звонит — служба слушает и ждёт.
+#
+# Два адреса, и путать их нельзя:
+#   @ПОРТ_СЁМЕ@   — публичный порт, куда звонит Сёма. ОДИН на всё: и
+#                   управляющий провод, и каждый поток браузера. Один нарочно:
+#                   дома Сёму изолируют на роутере, и открывать придётся ровно
+#                   одно направление, а не диапазон. Пример: 0.0.0.0:8767
+#   @ПОРТ_БРАУЗЕРАМ@ — петля, откуда берёт запросы край (nginx).
+#                   На живой машине это 127.0.0.1:8770
+#   @ДОМЕН@       — имя, под которым Сёма видна снаружи: sema.example.org
+#
+# Публичный сертификат держит край (nginx + certbot) — свой ACME включается
+# флагом -gate-acme и нужен только там, где перед шлюзом нет ничего;
+# ему требуются свободные 80 и 443, иначе служба откажется запускаться.
+#
+# Порядок установки и то, что обязан делать nginx, — deploy/README.md.
+
+[Unit]
+Description=Сёма-шлюз — вход к Сёме из интернета
+Documentation=https://github.com/PavluninVladimir/sema-agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=semagate
+Group=semagate
+
+# каталог состояния делает systemd: /var/lib/semagate, права 0700 —
+# удостоверение шлюза сосед по машине не читает
+StateDirectory=semagate
+StateDirectoryMode=0700
+ExecStart=/usr/local/bin/semaagent \
+  -gate-sema @ПОРТ_СЁМЕ@ \
+  -gate-http @ПОРТ_БРАУЗЕРАМ@ \
+  -gate-domain @ДОМЕН@ \
+  -home %S/semagate
+
+Restart=always
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=20s
+
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+# репозиториев человека шлюз не читает — и не должен: он единственный
+# здесь, кто смотрит в интернет
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

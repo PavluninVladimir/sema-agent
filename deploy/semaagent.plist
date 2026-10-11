@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Житель машины на маке. Раньше этот файл жил устным преданием в
+  ~/Library/LaunchAgents — теперь он часть поставки, как и systemd-юнит
+  рядом (design.md, решение 5).
+
+  Это шаблон: метку службы, домашний каталог и адрес Сёмы подставляет
+  deploy/install-mac.sh — launchd не понимает ни «~», ни переменных
+  окружения в путях. Заглушки взяты в собачки нарочно: «ДОМ» слишком
+  короткое слово, чтобы искать его по всему файлу заменой.
+
+  PATH задан нарочно: житель машины ищет на диске ctags, ripgrep, языковые
+  серверы и swiftc, а launchd даёт службе пустой PATH — без этой строки
+  ярусы ответа молча опускаются до grep.
+
+  В PATH обязан быть ~/go/bin: там живёт gopls, поставленный `go install`.
+  27 сентября 2026 его там не было, и Go — язык самой Сёмы и этого агента —
+  отвечал ярусом ctags, а «Умения» показывали «нет сервера». Потеря яруса
+  молчаливая: карточки приходят, просто хуже.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>@LABEL@</string>
+  <key>ProgramArguments</key><array>
+    <string>@ДОМ@/.local/bin/semaagent</string>
+    <string>-link</string><string>@АДРЕС_СЁМЫ@</string>
+    <string>-home</string><string>@ДОМ@/.sema-agent</string>
+  </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>@ДОМ@/go/bin:@ДОМ@/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>@ДОМ@/.sema-agent/agent.log</string>
+  <key>StandardErrorPath</key><string>@ДОМ@/.sema-agent/agent.log</string>
+</dict></plist>

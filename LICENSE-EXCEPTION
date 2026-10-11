@@ -1,0 +1,24 @@
+Sema Agent — the machine resident for Sema
+Copyright (C) 2026 Vladimir Pavlunin
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3 only (AGPL-3.0-only). See LICENSE.
+
+Additional permission under GNU AGPL version 3 section 7
+
+Configuration examples and hook scripts in `integrations/` may be copied,
+adapted and distributed under any terms, so that they can be placed into the
+configuration of other tools. Programs that talk to Sema Agent only through
+its protocols (MCP over stdio, the local socket, the hook interface) are not
+covered works or modifications of Sema Agent.
+
+---
+
+Дополнительное разрешение по разделу 7 GNU AGPL версии 3
+
+Примеры настроек и скрипты хуков в `integrations/` можно копировать,
+переделывать и распространять на любых условиях — чтобы класть их в
+настройки других инструментов. Программы, которые говорят с жителем машины
+только через его протоколы (MCP по stdio, местный сокет, хуки), не являются
+охватываемыми произведениями или изменениями жителя машины.
