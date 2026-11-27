@@ -704,6 +704,20 @@ func TestMCPLoginPathsKnown(t *testing.T) {
 	}
 }
 
+func TestTelegramAndGitHubPathsKnown(t *testing.T) {
+	for _, p := range []string{"/api/webhooks/github-release", "/api/webhooks/telegram/1", "/api/bots/82/telegram", "/api/bots/82/telegram/send"} {
+		if !Known(p) {
+			t.Errorf("путь %s отсеян", p)
+		}
+	}
+	for _, p := range []string{"/api/webhooks/github-release/other", "/api/webhooks/telegram/0", "/api/webhooks/telegram/1/extra",
+		"/api/bots/admin/telegram", "/api/bots/82/max", "/api/bots/82/telegram/debug", "/api/bots/82/telegram/send/"} {
+		if Known(p) {
+			t.Errorf("неизвестный путь %s пропущен", p)
+		}
+	}
+}
+
 // Значок приложения на домашнем экране iPhone: шлюз отсеивал
 // apple-touch-icon и icon-180 как «нет такого пути», и значок был пустым
 // (1 октября 2026).
