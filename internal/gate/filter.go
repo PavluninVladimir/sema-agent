@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -49,6 +50,7 @@ var semaPaths = struct {
 		// ручки, которыми живёт клиент
 		"/api/health", "/api/ui", "/api/ws", "/api/action", "/api/files",
 		"/api/push/key", "/api/push/subscribe", "/api/push/unsubscribe",
+		"/api/webhooks/github-release", // Сёма проверяет подпись публикации
 		// вход Сёмы на чужие серверы MCP: сервер входа скачивает документ
 		// клиента, а браузер человека возвращается с кодом
 		"/mcp/oauth/client.json", "/mcp/oauth/callback",
@@ -61,6 +63,8 @@ var semaPaths = struct {
 		"/share/",     // файл по подписанной ссылке: без входа, доступ даёт подпись
 	},
 }
+
+var telegramBotPath = regexp.MustCompile(`^/api/(webhooks/telegram/[1-9][0-9]*|bots/[1-9][0-9]*/telegram(/send)?)$`)
 
 // NeverAllowed — то, что у Сёмы есть, но интернету там делать нечего.
 //
@@ -86,7 +90,7 @@ func Known(p string) bool {
 			return true
 		}
 	}
-	return false
+	return telegramBotPath.MatchString(p)
 }
 
 // isLogin — путь входа или церемонии входа: там перебирают, и предел строже.
